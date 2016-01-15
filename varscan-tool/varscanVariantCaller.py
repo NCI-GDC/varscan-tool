@@ -1,5 +1,6 @@
 import os
 import subprocess
+import pipelineUtil
 
 def get_pileup(ref, bam, out, logger=None):
     """ create the pileup using samtools"""
@@ -9,6 +10,7 @@ def get_pileup(ref, bam, out, logger=None):
     if not os.path.abspath(out):
         raise Exception("Path to directory %s to which the output must be written  not found." %(os.path.abspath(out)))
 
+    logger.info("Sarting mpileup for %s" %bam)
     cmd = ["time", "samtools", "mpileup", "-f", ref, bam]
 
     with open(out, "w") as outfile:
@@ -25,12 +27,10 @@ def get_pileup(ref, bam, out, logger=None):
 
     return exit_code
 
-def run_varscan(normal, tumor, outbase, args, varscan_path="/home/ubuntu/bin", logger=None):
+def run_varscan(normal, tumor, outbase, args, logger=None):
     """ run varscan on normal and tumor pileups """
 
-    cmd = ["time", "java", "-jar", varscan_path, "somatic", normal, tumor, outbase,
-            "--output-snp", args.output_snp,
-            "--output-indel", args.output_indel,
+    cmd = ["time", "java", "-jar", args.varscan_path, "somatic", normal, tumor, outbase,
             "--min-coverage", args.min_coverage,
             "--min-coverage-normal", args.min_coverage_normal,
             "--min-coverage-tumor", args.min_coverage_tumor,
@@ -38,20 +38,39 @@ def run_varscan(normal, tumor, outbase, args, varscan_path="/home/ubuntu/bin", l
             "--min-freq-for-hom", args.min_freq_for_hom,
             "--normal-purity", args.normal_purity,
             "--tumor-purity", args.tumor_purity,
-            "--p-value", args.p-value,
+            "--p-value", args.p_value,
             "--somatic-p-value", args.somatic_p_value,
             "--strand-filter", args.strand_filter,
             "--validation", args.validation,
             "--output-vcf", args.output_vcf
             ]
 
-    child = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
-    stdout, stderr = child.communicate()
-    exit_code = child.returncode
+    #the SNP and indel files are generated as per the base name.
+    #if different values are provided, then they are added to the call.
 
-    if logger != None:
-        stderr = stderr.split("\n")
-        for line in stderr:
-            logger.info(line)
+    if not (args.output_snp == "output.snp"):
+        cmd = cmd + ["--output-snp" , args.output_snp]
+
+    if not (args.output_indel == "output.indel"):
+        cmd = cmd + ["--output-indel", args.output_indel]
+
+    logger.info("Starting Varscan Somatic Calls")
+
+    exit_code = pipelineUtil.run_command(cmd, logger)
+
+    return exit_code
+
+def varscan_high_confidence(args, snp, logger=None):
+    """ get high-confidence SNPs """
+
+    cmd = ["time", "java", "-jar", args.varscan_path, "processSomatic", snp,
+            "--min-tumor-freq", args.min_tumor_freq,
+            "--max-normal-freq", args.max_normal_freq,
+            "--p-value", args.p_high_confidence,
+            ]
+
+    logger.info("Starting Varscan processSomatic")
+
+    exit_code = pipelineUtil.run_command(cmd, logger)
 
     return exit_code
