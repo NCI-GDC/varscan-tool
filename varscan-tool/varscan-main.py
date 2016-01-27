@@ -1,10 +1,10 @@
 import setupLog
-import pipelineUtil
 import os
 import logging
 import argparse
 import varscanVariantCaller
 import multiprocessing
+from cdis_pipe_utils import postgres
 
 if __name__=="__main__":
 
@@ -14,10 +14,12 @@ if __name__=="__main__":
     required.add_argument("--normal", default=None, help="path to normal bam file", required=True)
     required.add_argument("--tumor", default=None, help="path to tumor bam file", required=True)
     required.add_argument("--outdir", default=None, help="path to output directory", required=True)
-
+    required.add_argument("--config", default=None, help="'path to config file to database", required=True)
 
     optional = parser.add_argument_group("optional input parameters")
-    optional.add_argument("--uuid", default="unknown", help="unique identifier")
+    optional.add_argument("--case_id", default="unknown", help="unique case identifier")
+    optional.add_argument("--normal_id", default="unknown", help="unique identifier for normal dataset")
+    optional.add_argument("--tumor_id", default="unknown", help="unique identifier for tumor dataset")
     optional.add_argument("--varscan_path", default="/home/ubuntu/bin/VarScan.jar", help="path to varscan jar")
 
     somatic = parser.add_argument_group("VarScan somatic input parameters")
@@ -41,6 +43,10 @@ if __name__=="__main__":
     processSomatic.add_argument("--max_normal_freq", default="0.05", help="Maximum variant allele frequency in normal")
     processSomatic.add_argument("--p_high_confidence", default="0.07", help="P-value for high-confidence calling")
 
+    db = parser.add_argument_group("Database Parameters")
+    db.add_argument("--host", default='pgreadwrite.osdc.io', help='hostname ofr database')
+    db.add_argument("--database", default='prod_bioinfo', help='name of the database')
+
     args = parser.parse_args()
 
     if not os.path.isfile(args.ref):
@@ -55,13 +61,36 @@ if __name__=="__main__":
     if not os.path.isdir(args.outdir):
         os.mkdirs(args.outdir)
 
-    log_file = "%s.varscan.log" %(os.path.join(args.outdir, args.uuid))
-    logger = setupLog.setup_logging(logging.INFO, args.uuid, log_file)
+    log_file = "%s.varscan.log" %(os.path.join(args.outdir, args.case_id))
+    logger = setupLog.setup_logging(logging.INFO, args.case_id, log_file)
 
 
-    normal_pileup = os.path.join(args.outdir, "%s.normal.pileup" %args.uuid)
-    tumor_pileup = os.path.join(args.outdir, "%s.tumor.pileup" %args.uuid)
+    normal_pileup = os.path.join(args.outdir, "%s.normal.pileup" %args.case_id)
+    tumor_pileup = os.path.join(args.outdir, "%s.tumor.pileup" %args.case_id)
 
+    #set up the database
+
+    s = open(args.config, 'r').read()
+    config = eval(s)
+    files = [args.normal_id, args.tumor_id]
+
+    #check if username and password are present
+    if 'username' not in config:
+        raise Exception("username for logging into the database not found")
+    if 'password' not in config:
+        raise Exception("password for logging into the database not found")
+
+
+    DATABASE = {
+        'drivername': 'postgres',
+        'host' : args.host,
+        'port' : '5432',
+        'username': config['username'],
+        'password' : config['password'],
+        'database' : args.database
+    }
+
+    engine = postgres.db_connect(DATABASE)
     """
     pool = multiprocessing.Pool(processes=2)
     results = list()
@@ -90,30 +119,40 @@ if __name__=="__main__":
     #norm_exit_code = pool.apply_async(varscanVariantCaller.get_pileup, (args.ref, args.normal, normal_pileup, logger))
     #tumor_exit_code = pool.apply_async(varscanVariantCaller.get_pileup, (args.ref, args.tumor, tumor_pileup, logger))
     """
-    norm_exit_code = varscanVariantCaller.get_pileup(args.ref, args.normal, normal_pileup, logger)
-    tumor_exit_code = varscanVariantCaller.get_pileup(args.ref, args.tumor, tumor_pileup, logger)
+    norm_metrics = varscanVariantCaller.get_pileup(args.ref, args.normal, normal_pileup, logger)
+    tumor_metrics = varscanVariantCaller.get_pileup(args.ref, args.tumor, tumor_pileup, logger)
 
-    if not(norm_exit_code and tumor_exit_code):
+    if not(norm_metrics['exit_status'] and tumor_metrics['exit_status']):
 
-        base = os.path.join(args.outdir, args.uuid)
-        somatic_exit_code = varscanVariantCaller.run_varscan(normal_pileup, tumor_pileup, base, args, logger)
-        if not somatic_exit_code:
+        postgres.add_metrics(engine, 'samtools_mpileup', args.case_id, [args.normal_id], norm_metrics, logger)
+        postgres.add_metrics(engine, 'samtools_mpileup', args.case_id, [args.tumor_id], tumor_metrics, logger)
 
+        base = os.path.join(args.outdir, args.case_id)
+
+        somatic_metrics = varscanVariantCaller.run_varscan(normal_pileup, tumor_pileup, base, args, logger)
+
+        if not somatic_metrics['exit_status']:
+
+            postgres.add_metrics(engine, 'VarscanSomatic', args.case_id, files, somatic_metrics, logger)
             snp = "%s.snp" %base
+
             if args.output_vcf == "1":
                 snp = "%s.vcf" %snp
 
             if os.path.isfile(snp):
-                processSomatic_exit_code = varscanVariantCaller.varscan_high_confidence(args, snp, logger)
+                processSomatic_metrics = varscanVariantCaller.varscan_high_confidence(args, snp, logger)
 
-                if processSomatic_exit_code:
-                    logger.error("VarScan processSomatic exited with non-zero exit code %s" %processSomatic_exit_code)
+                if not processSomatic_metrics['exit_status']:
+                    postgres.add_metrics(engine, 'VarscanProcessSomatic', args.case_id, files, processSomatic_metrics, logger)
+
+                else:
+                    logger.error("VarScan processSomatic exited with non-zero exit code %s" %processSomatic_metrics['exit_status'])
 
             else:
                 raise Exception("Could not find output %s from VarScan" %snp)
         else:
-            logger.error("VarScan somatic exited with a non-zero exit code %s" %somatic_exit_code)
+            logger.error("VarScan somatic exited with a non-zero exit code %s" %somatic_metrics['exit_status'])
     else:
-        logger.error("Samtools pileup for tumor and normal exited with following exit-codes: normal %s and tumor %s" %(norm_exit_code, tumor_exit_code))
+        logger.error("Samtools pileup for tumor and normal exited with following exit-codes: normal %s and tumor %s" %(norm_metrics['exit_status'], tumor_metrics['exit_status']))
 
 

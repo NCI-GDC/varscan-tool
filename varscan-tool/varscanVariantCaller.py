@@ -1,6 +1,7 @@
 import os
 import subprocess
-import pipelineUtil
+from cdis_pipe_utils import time_util
+from cdis_pipe_utils import pipe_util
 
 def get_pileup(ref, bam, out, logger=None):
     """ create the pileup using samtools"""
@@ -11,21 +12,28 @@ def get_pileup(ref, bam, out, logger=None):
         raise Exception("Path to directory %s to which the output must be written  not found." %(os.path.abspath(out)))
 
     logger.info("Sarting mpileup for %s" %bam)
+
     cmd = ["time", "samtools", "mpileup", "-f", ref, bam]
+    cmd = "samtools mpileup -f %s %s > %s" %(ref, bam, out)
 
-    with open(out, "w") as outfile:
-        child = subprocess.Popen(cmd, stdout=outfile, stderr=subprocess.PIPE)
-        stdout, stderr = child.communicate()
-        exit_code = child.returncode
+    output = pipe_util.do_shell_command(cmd, logger)
+    metrics = time_util.parse_time(output)
 
-    outfile.close()
+    return metrics
 
-    if logger != None:
-        stderr = stderr.split("\n")
-        for line in stderr:
-            logger.info(line)
-
-    return exit_code
+#    with open(out, "w") as outfile:
+#        child = subprocess.Popen(cmd, stdout=outfile, stderr=subprocess.PIPE)
+#        stdout, stderr = child.communicate()
+#        exit_code = child.returncode
+#
+#    outfile.close()
+#
+#    if logger != None:
+#        stderr = stderr.split("\n")
+#        for line in stderr:
+#            logger.info(line)
+#
+#    return exit_code
 
 def run_varscan(normal, tumor, outbase, args, logger=None):
     """ run varscan on normal and tumor pileups """
@@ -56,9 +64,10 @@ def run_varscan(normal, tumor, outbase, args, logger=None):
 
     logger.info("Starting Varscan Somatic Calls")
 
-    exit_code = pipelineUtil.run_command(cmd, logger)
+    output = pipe_util.do_command(cmd, logger)
+    metrics = time_util.parse_time(output)
 
-    return exit_code
+    return metrics
 
 def varscan_high_confidence(args, snp, logger=None):
     """ get high-confidence SNPs """
@@ -71,6 +80,7 @@ def varscan_high_confidence(args, snp, logger=None):
 
     logger.info("Starting Varscan processSomatic")
 
-    exit_code = pipelineUtil.run_command(cmd, logger)
+    output = pipe_util.do_command(cmd, logger)
+    metrics = time_util.parse_time(output)
 
-    return exit_code
+    return metrics
