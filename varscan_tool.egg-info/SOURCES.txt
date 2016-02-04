@@ -1,6 +1,0 @@
-setup.cfg
-varscan_tool.egg-info/PKG-INFO
-varscan_tool.egg-info/SOURCES.txt
-varscan_tool.egg-info/dependency_links.txt
-varscan_tool.egg-info/requires.txt
-varscan_tool.egg-info/top_level.txt
