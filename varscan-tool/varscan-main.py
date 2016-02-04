@@ -30,7 +30,6 @@ if __name__=="__main__":
     required.add_argument("--ref", default=None, help="path to reference genome", required=True)
     required.add_argument("--normal", default=None, help="path to normal bam file", required=True)
     required.add_argument("--tumor", default=None, help="path to tumor bam file", required=True)
-    required.add_argument("--outdir", default=None, help="path to output directory", required=True)
     required.add_argument("--username", default=None, help="username for postgres", required=True)
     required.add_argument("--password", default=None, help="password for postgres", required=True)
 
@@ -39,6 +38,7 @@ if __name__=="__main__":
     optional.add_argument("--normal_id", default="unknown", help="unique identifier for normal dataset")
     optional.add_argument("--tumor_id", default="unknown", help="unique identifier for tumor dataset")
     optional.add_argument("--varscan_path", default="/home/ubuntu/bin/VarScan.jar", help="path to varscan jar")
+    optional.add_argument("--outdir", default="./", help="path to output directory")
 
     somatic = parser.add_argument_group("VarScan somatic input parameters")
     somatic.add_argument("--output_snp", default="output.snp", help="Output file for SNP calls")
@@ -135,7 +135,7 @@ if __name__=="__main__":
 
     if not(norm_metrics['exit_status'] and tumor_metrics['exit_status']):
 
-        norm_met = create_metrics_object(norm_metrics, args.case_id, file_ids 'samtools_mpileup')
+        norm_met = create_metrics_object(norm_metrics, args.case_id, file_ids,'samtools_mpileup')
         tum_met = create_metrics_object(tum_metrics, args.case_id, file_ids, 'samtools_mpileup')
 
         postgres.create_table(engine, norm_met)
