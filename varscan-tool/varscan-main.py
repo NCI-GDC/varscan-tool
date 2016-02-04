@@ -6,6 +6,23 @@ import varscanVariantCaller
 import multiprocessing
 from cdis_pipe_utils import postgres
 
+class Varscan(postgres.ToolTypeMixin, postgres.Base):
+
+    __tablename__ = 'varscan_metrics'
+
+def create_metrics_object(metrics, case_id, file_ids, toolname):
+    """ creates a metrics object """
+
+    met = Varscan(case_id = case_id,
+                    tool = toolname,
+                    files=file_ids,
+                    systime=metrics['system_time'],
+                    usertime=metrics['user_time'],
+                    elapsed=metrics['wall_clock'],
+                    cpu=metrics['percent_of_cpu'],
+                    max_resident_time=metrics['maximum_resident_set_size'])
+    return met
+
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser(description="Variant calling using Varscan")
@@ -14,7 +31,8 @@ if __name__=="__main__":
     required.add_argument("--normal", default=None, help="path to normal bam file", required=True)
     required.add_argument("--tumor", default=None, help="path to tumor bam file", required=True)
     required.add_argument("--outdir", default=None, help="path to output directory", required=True)
-    required.add_argument("--config", default=None, help="'path to config file to database", required=True)
+    required.add_argument("--username", default=None, help="username for postgres", required=True)
+    required.add_argument("--password", default=None, help="password for postgres", required=True)
 
     optional = parser.add_argument_group("optional input parameters")
     optional.add_argument("--case_id", default="unknown", help="unique case identifier")
@@ -70,27 +88,20 @@ if __name__=="__main__":
 
     #set up the database
 
-    s = open(args.config, 'r').read()
-    config = eval(s)
-    files = [args.normal_id, args.tumor_id]
-
-    #check if username and password are present
-    if 'username' not in config:
-        raise Exception("username for logging into the database not found")
-    if 'password' not in config:
-        raise Exception("password for logging into the database not found")
-
-
     DATABASE = {
         'drivername': 'postgres',
         'host' : args.host,
         'port' : '5432',
-        'username': config['username'],
-        'password' : config['password'],
+        'username': args.username,
+        'password' : args.password,
         'database' : args.database
     }
 
+
     engine = postgres.db_connect(DATABASE)
+
+    file_ids = [args.normal_id, args.tumor_id]
+
     """
     pool = multiprocessing.Pool(processes=2)
     results = list()
@@ -124,8 +135,13 @@ if __name__=="__main__":
 
     if not(norm_metrics['exit_status'] and tumor_metrics['exit_status']):
 
-        postgres.add_metrics(engine, 'samtools_mpileup', args.case_id, [args.normal_id], norm_metrics, logger)
-        postgres.add_metrics(engine, 'samtools_mpileup', args.case_id, [args.tumor_id], tumor_metrics, logger)
+        norm_met = create_metrics_object(norm_metrics, args.case_id, file_ids 'samtools_mpileup')
+        tum_met = create_metrics_object(tum_metrics, args.case_id, file_ids, 'samtools_mpileup')
+
+        postgres.create_table(engine, norm_met)
+
+        postgres.add_metrics(engine, norm_met)
+        postgress.add_metrics(engine, tum_met)
 
         base = os.path.join(args.outdir, args.case_id)
 
@@ -133,17 +149,21 @@ if __name__=="__main__":
 
         if not somatic_metrics['exit_status']:
 
-            postgres.add_metrics(engine, 'VarscanSomatic', args.case_id, files, somatic_metrics, logger)
+            somatic_met = create_metrics_object(somatic_metrics, args.case_id, file_ids, 'VarscanSomatic')
+            postgres.add_metrics(engine, somatic_met)
+
             snp = "%s.snp" %base
 
             if args.output_vcf == "1":
-                snp = "%s.vcf" %snp
+                snp = "%s.vcf" %base
 
             if os.path.isfile(snp):
                 processSomatic_metrics = varscanVariantCaller.varscan_high_confidence(args, snp, logger)
 
                 if not processSomatic_metrics['exit_status']:
-                    postgres.add_metrics(engine, 'VarscanProcessSomatic', args.case_id, files, processSomatic_metrics, logger)
+
+                    processSomatic_met = create_metrics_object(processSomatic_metrics, args.case_id, file_ids, 'VarscanProcessSomatic')
+                    postgres.add_metrics(engine, processSomatic_met)
 
                 else:
                     logger.error("VarScan processSomatic exited with non-zero exit code %s" %processSomatic_metrics['exit_status'])
@@ -155,4 +175,4 @@ if __name__=="__main__":
     else:
         logger.error("Samtools pileup for tumor and normal exited with following exit-codes: normal %s and tumor %s" %(norm_metrics['exit_status'], tumor_metrics['exit_status']))
 
-
+    logger.info("added metrics for %s" %args.case_id)
