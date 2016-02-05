@@ -129,21 +129,23 @@ if __name__=="__main__":
 
     #norm_exit_code = pool.apply_async(varscanVariantCaller.get_pileup, (args.ref, args.normal, normal_pileup, logger))
     #tumor_exit_code = pool.apply_async(varscanVariantCaller.get_pileup, (args.ref, args.tumor, tumor_pileup, logger))
+
     """
+
     norm_metrics = varscanVariantCaller.get_pileup(args.ref, args.normal, normal_pileup, logger)
     tumor_metrics = varscanVariantCaller.get_pileup(args.ref, args.tumor, tumor_pileup, logger)
 
     if not(norm_metrics['exit_status'] and tumor_metrics['exit_status']):
 
         norm_met = create_metrics_object(norm_metrics, args.case_id, file_ids,'samtools_mpileup')
-        tum_met = create_metrics_object(tum_metrics, args.case_id, file_ids, 'samtools_mpileup')
+        tum_met = create_metrics_object(tumor_metrics, args.case_id, file_ids, 'samtools_mpileup')
 
         postgres.create_table(engine, norm_met)
 
         postgres.add_metrics(engine, norm_met)
-        postgress.add_metrics(engine, tum_met)
+        postgres.add_metrics(engine, tum_met)
 
-        base = os.path.join(args.outdir, args.case_id)
+        base = os.path.join(args.outdir, os.path.basename(args.output_snp))
 
         somatic_metrics = varscanVariantCaller.run_varscan(normal_pileup, tumor_pileup, base, args, logger)
 
