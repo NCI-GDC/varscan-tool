@@ -137,8 +137,8 @@ if __name__=="__main__":
 
     if not(norm_metrics['exit_status'] and tumor_metrics['exit_status']):
 
-        norm_met = create_metrics_object(norm_metrics, args.case_id, file_ids,'samtools_mpileup')
-        tum_met = create_metrics_object(tumor_metrics, args.case_id, file_ids, 'samtools_mpileup')
+        norm_met = create_metrics_object(norm_metrics, args.case_id, file_ids,'samtools_mpileup_normal')
+        tum_met = create_metrics_object(tumor_metrics, args.case_id, file_ids, 'samtools_mpileup_tumor')
 
         postgres.create_table(engine, norm_met)
 
