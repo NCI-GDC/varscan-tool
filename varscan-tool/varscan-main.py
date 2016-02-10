@@ -39,6 +39,9 @@ if __name__=="__main__":
     optional.add_argument("--tumor_id", default="unknown", help="unique identifier for tumor dataset")
     optional.add_argument("--varscan_path", default="/home/ubuntu/bin/VarScan.jar", help="path to varscan jar")
     optional.add_argument("--outdir", default="./", help="path to output directory")
+    optional.add_argument("--q", default="1", help="quality filter for samtools mpileup")
+    optional.add_argument("--b", default="1", help="disable samtools BAQ computation")
+    optional.add_argument("--base", default="output", help="base for variant call output")
 
     somatic = parser.add_argument_group("VarScan somatic input parameters")
     somatic.add_argument("--output_snp", default="output.snp", help="Output file for SNP calls")
@@ -46,7 +49,7 @@ if __name__=="__main__":
     somatic.add_argument("--min_coverage", default="8", help="Minimum coverage in normal and tumor to call variant")
     somatic.add_argument("--min_coverage_normal", default="8", help="Minimum coverage in normal to call somatic")
     somatic.add_argument("--min_coverage_tumor", default="6", help="Minimum coverage in tumor to call somatic")
-    somatic.add_argument("--min_var_freq", default="6", help="Minimum variant frequency to call a heterozygote")
+    somatic.add_argument("--min_var_freq", default="0.10", help="Minimum variant frequency to call a heterozygote")
     somatic.add_argument("--min_freq_for_hom", default="0.75", help="Minimum frequency to call homozygote")
     somatic.add_argument("--normal_purity", default="1.0", help="Estimated purity (non-tumor content) of normal sample")
     somatic.add_argument("--tumor_purity", default="1.00", help="Estimated purity (tumor content) of tumor sample")
@@ -83,8 +86,6 @@ if __name__=="__main__":
     logger = setupLog.setup_logging(logging.INFO, args.case_id, log_file)
 
 
-    normal_pileup = os.path.join(args.outdir, "%s.normal.pileup" %args.case_id)
-    tumor_pileup = os.path.join(args.outdir, "%s.tumor.pileup" %args.case_id)
 
     #set up the database
 
@@ -132,32 +133,33 @@ if __name__=="__main__":
 
     """
 
-    norm_metrics = varscanVariantCaller.get_pileup(args.ref, args.normal, normal_pileup, logger)
-    tumor_metrics = varscanVariantCaller.get_pileup(args.ref, args.tumor, tumor_pileup, logger)
+    pileup = os.path.join(args.outdir, "%s.pileup" %args.case_id)
+    pileup_metrics = varscanVariantCaller.get_pileup(args.ref, args.normal, args.tumor, pileup, args.b, args.q, logger)
 
-    if not(norm_metrics['exit_status'] and tumor_metrics['exit_status']):
+    if not(pileup_metrics['exit_status']):
 
-        norm_met = create_metrics_object(norm_metrics, args.case_id, file_ids,'samtools_mpileup')
-        tum_met = create_metrics_object(tumor_metrics, args.case_id, file_ids, 'samtools_mpileup')
+        pileup_met = create_metrics_object(pileup_metrics, args.case_id, file_ids,'samtools_mpileup')
 
-        postgres.create_table(engine, norm_met)
+        postgres.create_table(engine, pileup_met)
 
-        postgres.add_metrics(engine, norm_met)
-        postgres.add_metrics(engine, tum_met)
+        postgres.add_metrics(engine, pileup_met)
 
-        base = os.path.join(args.outdir, os.path.basename(args.output_snp))
+        base = os.path.join(args.outdir, os.path.basename(args.base))
 
-        somatic_metrics = varscanVariantCaller.run_varscan(normal_pileup, tumor_pileup, base, args, logger)
+        somatic_metrics = varscanVariantCaller.run_varscan(pileup, base, args, logger)
 
         if not somatic_metrics['exit_status']:
 
             somatic_met = create_metrics_object(somatic_metrics, args.case_id, file_ids, 'VarscanSomatic')
             postgres.add_metrics(engine, somatic_met)
 
-            snp = "%s.snp" %base
+            snp = ""
 
-            if args.output_vcf == "1":
-                snp = "%s.vcf" %base
+            if args.output_vcf == "0":
+                snp = "%s.snp" %base
+
+            elif args.output_vcf == "1":
+                snp = "%s.snp.vcf" %base
 
             if os.path.isfile(snp):
                 processSomatic_metrics = varscanVariantCaller.varscan_high_confidence(args, snp, logger)
@@ -175,6 +177,6 @@ if __name__=="__main__":
         else:
             logger.error("VarScan somatic exited with a non-zero exit code %s" %somatic_metrics['exit_status'])
     else:
-        logger.error("Samtools pileup for tumor and normal exited with following exit-codes: normal %s and tumor %s" %(norm_metrics['exit_status'], tumor_metrics['exit_status']))
+        logger.error("Samtools pileup for tumor and normal exited with following exit-code: %s" %(pileup_metrics['exit_status']))
 
     logger.info("added metrics for %s" %args.case_id)
