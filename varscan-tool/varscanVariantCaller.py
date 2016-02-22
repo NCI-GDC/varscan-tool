@@ -1,36 +1,42 @@
 import os
 import subprocess
-import pipelineUtil
+from cdis_pipe_utils import time_util
+from cdis_pipe_utils import pipe_util
 
-def get_pileup(ref, bam, out, logger=None):
+def get_pileup(ref, nbam, tbam, out, b, q, logger=None):
     """ create the pileup using samtools"""
 
-    if not(os.path.isfile(ref) and os.path.isfile(bam)):
-        raise Exception("Reference file %s or BAM file %s not found. Please check the file exists and the path is correct" %(ref, bam))
+    if not os.path.isfile(ref):
+        raise Exception("Reference file %s not found. Please check the file exists and the path is correct" %ref)
+    if not os.path.isfile(nbam):
+        raise Exception("Normal bam file %s not found. Please check the file exists and the path is correct" %nbam)
+    if not os.path.isfile(tbam):
+        raise Exception("Tumor bam file %s not found. Please check the file exists and the path is correct" %tbam)
     if not os.path.abspath(out):
         raise Exception("Path to directory %s to which the output must be written  not found." %(os.path.abspath(out)))
+    if not (int(q) >= 0):
+        raise Exception("Quality filter cannot be negative")
 
-    logger.info("Sarting mpileup for %s" %bam)
-    cmd = ["time", "samtools", "mpileup", "-f", ref, bam]
+    logger.info("Sarting mpileup for %s and %s" %(nbam, tbam))
 
-    with open(out, "w") as outfile:
-        child = subprocess.Popen(cmd, stdout=outfile, stderr=subprocess.PIPE)
-        stdout, stderr = child.communicate()
-        exit_code = child.returncode
+    cmd = "samtools mpileup -f %s -q %s" %(ref, q)
 
-    outfile.close()
+    if int(b):
+        cmd += " -B"
 
-    if logger != None:
-        stderr = stderr.split("\n")
-        for line in stderr:
-            logger.info(line)
+    cmd += " %s %s > %s" %(nbam, tbam, out)
+    print cmd
+    output = pipe_util.do_shell_command(cmd, logger)
+    metrics = time_util.parse_time(output)
 
-    return exit_code
+    return metrics
 
-def run_varscan(normal, tumor, outbase, args, logger=None):
+
+def run_varscan(pileup, outbase, args, logger=None):
     """ run varscan on normal and tumor pileups """
 
-    cmd = ["time", "java", "-jar", args.varscan_path, "somatic", normal, tumor, outbase,
+    cmd = ["time", "java", "-jar", args.varscan_path, "somatic", pileup, outbase,
+            "--mpileup", "1",
             "--min-coverage", args.min_coverage,
             "--min-coverage-normal", args.min_coverage_normal,
             "--min-coverage-tumor", args.min_coverage_tumor,
@@ -41,9 +47,15 @@ def run_varscan(normal, tumor, outbase, args, logger=None):
             "--p-value", args.p_value,
             "--somatic-p-value", args.somatic_p_value,
             "--strand-filter", args.strand_filter,
-            "--validation", args.validation,
-            "--output-vcf", args.output_vcf
             ]
+
+    #Set output validation and format
+
+    if int(args.validation):
+        cmd = cmd + ['--validation']
+
+    if int(args.output_vcf):
+        cmd = cmd + ['--output-vcf']
 
     #the SNP and indel files are generated as per the base name.
     #if different values are provided, then they are added to the call.
@@ -54,11 +66,13 @@ def run_varscan(normal, tumor, outbase, args, logger=None):
     if not (args.output_indel == "output.indel"):
         cmd = cmd + ["--output-indel", args.output_indel]
 
+
     logger.info("Starting Varscan Somatic Calls")
 
-    exit_code = pipelineUtil.run_command(cmd, logger)
+    output = pipe_util.do_command(cmd, logger)
+    metrics = time_util.parse_time(output)
 
-    return exit_code
+    return metrics
 
 def varscan_high_confidence(args, snp, logger=None):
     """ get high-confidence SNPs """
@@ -71,6 +85,7 @@ def varscan_high_confidence(args, snp, logger=None):
 
     logger.info("Starting Varscan processSomatic")
 
-    exit_code = pipelineUtil.run_command(cmd, logger)
+    output = pipe_util.do_command(cmd, logger)
+    metrics = time_util.parse_time(output)
 
-    return exit_code
+    return metrics
