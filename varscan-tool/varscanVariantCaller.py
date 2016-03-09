@@ -3,7 +3,7 @@ import subprocess
 from cdis_pipe_utils import time_util
 from cdis_pipe_utils import pipe_util
 
-def get_pileup(ref, nbam, tbam, out, b, q, logger=None):
+def get_pileup(ref, nbam, tbam, out, args, logger=None):
     """ create the pileup using samtools"""
 
     if not os.path.isfile(ref):
@@ -14,17 +14,21 @@ def get_pileup(ref, nbam, tbam, out, b, q, logger=None):
         raise Exception("Tumor bam file %s not found. Please check the file exists and the path is correct" %tbam)
     if not os.path.abspath(out):
         raise Exception("Path to directory %s to which the output must be written  not found." %(os.path.abspath(out)))
-    if not (int(q) >= 0):
+    if not (int(args.q) >= 0):
         raise Exception("Quality filter cannot be negative")
 
     logger.info("Sarting mpileup for %s and %s" %(nbam, tbam))
 
-    cmd = "samtools mpileup -f %s -q %s" %(ref, q)
+    cmd = "samtools mpileup -f %s -q %s" %(ref, args.q)
 
-    if int(b):
+    if int(args.b):
         cmd += " -B"
 
+    if int(args.ff):
+        cmd += " --ff %s" %args.ff
+
     cmd += " %s %s > %s" %(nbam, tbam, out)
+
     print cmd
     output = pipe_util.do_shell_command(cmd, logger)
     metrics = time_util.parse_time(output)

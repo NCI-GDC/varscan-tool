@@ -42,6 +42,7 @@ if __name__=="__main__":
     optional.add_argument("--q", default="1", help="quality filter for samtools mpileup")
     optional.add_argument("--b", default="1", help="disable samtools BAQ computation")
     optional.add_argument("--base", default="output", help="base for variant call output")
+    optional.add_argument("--ff", default="0", help="format fastq for samtools view")
 
     somatic = parser.add_argument_group("VarScan somatic input parameters")
     somatic.add_argument("--output_snp", default="output.snp", help="Output file for SNP calls")
@@ -134,7 +135,7 @@ if __name__=="__main__":
     """
 
     pileup = os.path.join(args.outdir, "%s.pileup" %args.case_id)
-    pileup_metrics = varscanVariantCaller.get_pileup(args.ref, args.normal, args.tumor, pileup, args.b, args.q, logger)
+    pileup_metrics = varscanVariantCaller.get_pileup(args.ref, args.normal, args.tumor, pileup,args, logger)
 
     if not(pileup_metrics['exit_status']):
 
