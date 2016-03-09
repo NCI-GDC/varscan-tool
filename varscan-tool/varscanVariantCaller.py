@@ -29,7 +29,6 @@ def get_pileup(ref, nbam, tbam, out, args, logger=None):
 
     cmd += " %s %s > %s" %(nbam, tbam, out)
 
-    print cmd
     output = pipe_util.do_shell_command(cmd, logger)
     metrics = time_util.parse_time(output)
 
