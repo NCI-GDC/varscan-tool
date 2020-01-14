@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 LABEL maintainer="sli6@uchicago.edu"
-LABEL version="2.3.9"
+LABEL version="1.5"
 LABEL description="Python wrapper of multithreading `VarScan.v2.3.9`"
 
 RUN apt-get update -y \
