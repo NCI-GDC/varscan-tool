@@ -1,15 +1,16 @@
 FROM ubuntu:16.04
+LABEL maintainer="sli6@uchicago.edu"
+LABEL version="2.3.9"
+LABEL description="Python wrapper of multithreading `VarScan.v2.3.9`"
 
-RUN apt-get update -y && \
-    apt-get install -y \
+RUN apt-get update -y \
+    && apt-get install -y \
     openjdk-8-jre-headless \
-    python-pip python-dev wget
+    python-dev \
+    wget \
+    && apt-get clean
 
-RUN cd /bin/ && wget http://downloads.sourceforge.net/project/varscan/VarScan.v2.3.9.jar
-RUN wget https://github.com/broadinstitute/picard/releases/download/2.10.1/picard.jar \
-    && mv picard.jar /usr/local/bin/ \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN cd /opt/ \
+    && wget http://downloads.sourceforge.net/project/varscan/VarScan.v2.3.9.jar
 
-ADD multi_varscan2.py /bin/
-
-ENV multi_varscan2 v1.4
+ADD multi_varscan2.py /opt/
