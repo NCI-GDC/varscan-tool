@@ -30,6 +30,7 @@ The docker images are tested under multiple environments. The most tested ones a
 * Docker version 17.12.1-ce, build 7390fc6
 
 ## For external users
+The repository has only been tested on GDC data and in the particular environment GDC is running in. Some of the reference data required for the workflow production are hosted in [GDC reference files](https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files "GDC reference files"). For any questions related to GDC data, please contact the GDC Help Desk at support@nci-gdc.datacommons.io.
 
 There is a production-ready CWL example at https://github.com/NCI-GDC/varscan-cwl which uses the docker images that are built from the `Dockerfile`s in this repo.
 
