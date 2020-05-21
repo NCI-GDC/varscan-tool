@@ -6,13 +6,16 @@ Multithreading VarScan2.3.9
 
 import os
 import sys
-import glob
 import time
+import glob
+import ctypes
 import logging
 import argparse
+import threading
 import subprocess
-from multiprocessing.dummy import Pool
+from signal import SIGKILL
 from functools import partial
+from concurrent.futures import ThreadPoolExecutor
 
 
 def setup_logger():
@@ -29,33 +32,55 @@ def setup_logger():
     return logger
 
 
-def run_command(cmd, logger, shell_var=False):
-    """Runs a subprocess"""
+def subprocess_commands_pipe(cmd, logger, shell_var=True, lock=threading.Lock()):
+    """run pool commands"""
+    libc = ctypes.CDLL("libc.so.6")
+    pr_set_pdeathsig = ctypes.c_int(1)
+
+    def child_preexec_set_pdeathsig():
+        """
+        preexec_fn argument for subprocess.Popen,
+        it will send a SIGKILL to the child once the parent exits
+        """
+
+        def pcallable():
+            return libc.prctl(pr_set_pdeathsig, ctypes.c_ulong(SIGKILL))
+
+        return pcallable
+
     try:
-        child = subprocess.Popen(
+        output = subprocess.Popen(
             cmd,
-            stdin=subprocess.PIPE,
+            executable="/bin/bash",
+            shell=shell_var,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            shell=shell_var,
-            executable="/bin/bash",
+            preexec_fn=child_preexec_set_pdeathsig(),
         )
-        stdoutdata, stderrdata = child.communicate()
-        logger.info(stdoutdata)
-        logger.info(stderrdata)
-    except BaseException as err:
-        logger.error("Command failed %s", cmd)
-        logger.error("Command Error: %s", err)
-    return child.returncode
+        ret = output.wait()
+        with lock:
+            logger.info("Running command: %s", cmd)
+    except BaseException as e:
+        output.kill()
+        with lock:
+            logger.error("command failed %s", cmd)
+            logger.exception(e)
+    finally:
+        output_stdout, output_stderr = output.communicate()
+        with lock:
+            logger.error(output_stdout.decode("UTF-8"))
+            logger.error(output_stderr.decode("UTF-8"))
+    return ret
 
 
-def multi_commands(dct, mpileups, thread_count, logger, shell_var=True):
+def tpe_submit_commands(kwargs, mpileups, thread_count, logger, shell_var=True):
     """run commands on number of threads"""
-    pool = Pool(int(thread_count))
-    output = pool.map(
-        partial(varscan2, dct, logger=logger, shell_var=shell_var), mpileups
-    )
-    return output
+    with ThreadPoolExecutor(max_workers=thread_count) as e:
+        for p in mpileups:
+            e.submit(
+                partial(varscan2, kwargs, logger=logger, shell_var=shell_var),
+                p,
+            )
 
 
 def varscan_process_somatic(dct, vcf, logger, shell_var=True):
@@ -77,10 +102,9 @@ def varscan_process_somatic(dct, vcf, logger, shell_var=True):
         str(dct["vps_p_value"]),
     ]
     logger.info("VarScan processSomatic Args: %s", " ".join(vps_cmd))
-    vps_cmd_output = run_command(" ".join(vps_cmd), logger, shell_var=shell_var)
+    vps_cmd_output = subprocess_commands_pipe(" ".join(vps_cmd), logger, shell_var=shell_var)
     if vps_cmd_output != 0:
         logger.error("Failed on VarScan processSomatic.")
-    return vps_cmd_output
 
 
 def varscan2(dct, mpileup, logger, shell_var=True):
@@ -124,25 +148,20 @@ def varscan2(dct, mpileup, logger, shell_var=True):
     if dct["validation"]:
         vs_cmd += ["--validation"]
     logger.info("VarScan2 somatic Args: %s", " ".join(vs_cmd))
-    vs_cmd_output = run_command(
+    vs_cmd_output = subprocess_commands_pipe(
         " ".join(vs_cmd), logger, shell_var=shell_var
     )
     if vs_cmd_output != 0:
         logger.error("Failed on VarScan2 somatic calling.")
-        return vs_cmd_output
     else:
         snp_vcf = output_base + ".snp.vcf"
         indel_vcf = output_base + ".indel.vcf"
-        ps_output = 0
-        ps_output += varscan_process_somatic(
+        varscan_process_somatic(
             dct, snp_vcf, logger, shell_var=shell_var
         )
-        ps_output += varscan_process_somatic(
+        varscan_process_somatic(
             dct, indel_vcf, logger, shell_var=shell_var
         )
-        if ps_output != 0:
-            return ps_output
-    return 0
 
 
 def merge_outputs(output_list, merged_file):
@@ -156,6 +175,12 @@ def merge_outputs(output_list, merged_file):
                         oh.write(line)
             first = False
     return merged_file
+
+
+def get_file_size(filename):
+    """ Gets file size """
+    fstats = os.stat(filename)
+    return fstats.st_size
 
 
 def get_args():
@@ -301,24 +326,23 @@ def get_args():
 def main(args, logger):
     """main"""
     logger.info("Running VarScan v2.3.9")
-    dct = vars(args)
-    outputs = multi_commands(dct, dct["tn_pair_pileup"], dct["thread_count"], logger)
-    if any(x != 0 for x in outputs):
-        logger.error("Failed multi_varscan2")
-    else:
-        snps = glob.glob("*snp.Somatic.hc.vcf")
-        indels = glob.glob("*indel.Somatic.hc.vcf")
-        merged_snps = "multi_varscan2_snp_merged.vcf"
-        merged_indels = "multi_varscan2_indel_merged.vcf"
-        try:
-            merge_outputs(snps, merged_snps)
-            merge_outputs(indels, merged_indels)
-        except BaseException as err:
-            logger.error("Merge outputs failed")
-            logger.error("Command Error: %s", err)
-        assert os.stat(merged_snps).st_size != 0, "Merged SNP VCF is Empty"
-        assert os.stat(merged_indels).st_size != 0, "Merged INDEL VCF is Empty"
-        logger.info("Completed multi_varscan2")
+    kwargs = vars(args)
+
+    # Start Queue
+    tpe_submit_commands(kwargs, kwargs["tn_pair_pileup"], kwargs["thread_count"], logger)
+
+    # Check outputs
+    snps = glob.glob("*snp.Somatic.hc.vcf")
+    indels = glob.glob("*indel.Somatic.hc.vcf")
+    assert len(snps) == len(indels) == len(kwargs["tn_pair_pileup"]), "Missing output!"
+    if any(get_file_size(x) == 0 for x in snps + indels):
+        logger.error("Empty output detected!")
+
+    # Merge
+    merged_snps = "multi_varscan2_snp_merged.vcf"
+    merged_indels = "multi_varscan2_indel_merged.vcf"
+    merge_outputs(snps, merged_snps)
+    merge_outputs(indels, merged_indels)
 
 
 if __name__ == "__main__":
@@ -326,7 +350,7 @@ if __name__ == "__main__":
     start = time.time()
     logger_ = setup_logger()
     logger_.info("-" * 80)
-    logger_.info("multi_varscan2.py")
+    logger_.info("multi_varscan2_p3.py")
     logger_.info("Program Args: %s", " ".join(sys.argv))
     logger_.info("-" * 80)
 
