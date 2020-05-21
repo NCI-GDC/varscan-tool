@@ -40,8 +40,8 @@ To run multi-threading VarScan2:
 
 ```
 [INFO] [20200114 21:50:13] [multi_varscan2] - --------------------------------------------------------------------------------
-[INFO] [20200114 21:50:13] [multi_varscan2] - multi_varscan2.py
-[INFO] [20200114 21:50:13] [multi_varscan2] - Program Args: docker/multi_varscan2/multi_varscan2.py -h
+[INFO] [20200114 21:50:13] [multi_varscan2] - multi_varscan2_p3.py
+[INFO] [20200114 21:50:13] [multi_varscan2] - Program Args: docker/multi_varscan2/multi_varscan2_p3.py -h
 [INFO] [20200114 21:50:13] [multi_varscan2] - --------------------------------------------------------------------------------
 usage: Internal multithreading Varscan2.3.9 pipeline. [-h] -m TN_PAIR_PILEUP
                                                       -d REF_DICT
