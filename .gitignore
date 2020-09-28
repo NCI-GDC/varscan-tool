@@ -169,3 +169,6 @@ ENV/
 
 # VSCode
 .vscode/
+
+# Vim
+.vim/
