@@ -3,7 +3,7 @@ MAINTAINER Charles Czysz <czysz@uchicago.edu>
 
 FROM python:3.7-slim
 
-COPY --from=varscan / /
+COPY --from=varscan /usr/local/bin/* /usr/local/bin/
 
 ENV BINARY=varscan_tool
 
@@ -24,6 +24,6 @@ RUN make init-pip \
 ENV TINI_VERSION v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
+ENTRYPOINT ["/tini", "--", "varscan_tool"]
 
-CMD ["varscan_tool"]
+CMD ["--help"]
