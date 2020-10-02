@@ -1,26 +1,24 @@
 services:
-  - docker
-
+- docker
 install: make build
-
 stages:
-  - name: publish-release
-    if: branch = master AND type != pull_request
-  - name: publish-staging
-    if: branch != master AND type != pull_request
-
+- name: publish-release
+  if: branch = master AND type != pull_request
+- name: publish-staging
+  if: branch != master AND type != pull_request
 jobs:
   include:
-    - stage: publish-staging
-      name: Publish staging image
-      script:
-        - docker login -u="$QUAY_USERNAME" -p="$QUAY_PASSWORD" quay.io
-        - make publish-staging
-    - stage: publish-release
-      name: Publish production image
-      script:
-        - docker login -u="$QUAY_USERNAME" -p="$QUAY_PASSWORD" quay.io
-        - make publish-release
-
+  - stage: publish-staging
+    name: Publish staging image
+    script:
+    - docker login -u="$QUAY_USERNAME" -p="$QUAY_PASSWORD" quay.io
+    - make publish-staging
+  - stage: publish-release
+    name: Publish production image
+    script:
+    - docker login -u="$QUAY_USERNAME" -p="$QUAY_PASSWORD" quay.io
+    - make publish-release
 env:
   global:
+  - secure: no5NbpXHewnqZyYjTnjCTP7ey7hSIF7BoursbZmX2f/vu4+ba0gbV6PUTsgczVxYnlNhJng2vys2Ocf2CysP8MMoHM2owD8HaGB3FWvF//3QNGQZoAjoWKvvpjZ/u6gHquI1o8lK+VDHKnM+tAqh0wXbOha23SVP7hvc3lZQ2HFr9E9eAiMXSzRJ+hNrZbUA9cuEZjNJBpn619KAvURWQ/i3B6sBu79R3OUUKONdvnSGS0/c9MTzIRpiwUQ/6cq0A5JZEtz/ofn6vkiYNSZyxBo1NJYa3v56uVCYXDRlsOmkuvp4AEWZjCRzUIEXJZ4U4bqV4eyvX/WcYi618/6i6bVt7piDT1j6qPZCqNmC5pV6N5JkTUwE9XvDqiQaUi91yCP2opqQ9GwtIWS5z1VFwLO8nyeX5m87jfsIZ5ZJtjSsaxJJEAxdB6BgP10lorRTly6IwOQP/e0S+ZkLI2BrCKlzHgoaH0f7rj7RE/qAi+UIN34oInigrP/cRJlsBqawG7SCrl3WkuS30xGpmE8P3n2dch9ya/yRqyR8oz9GLOtOjP2L1Ho8Fe0dxbVP4/ZuMWBJXlESmM6DppsoCwnU1Qyl6eZnAH1e8JMQrh8TwTYFkUeu5ExposC+Ddc0qpDw4dSam2YT1UXnq0Te0cupxdV4bJJnM8+6jQrZ2s1zRbc=
+  - secure: G5Nzdd4m3U7fgwWii1YJOP/MYsAhUsIGrQ2tAcw0tnQiEF2Mvj2kUs4E66BRoD22AoEsdSpGynbLPTDJJ27CkerOwzQOG1S44+YSw5JE2qlxXgCHsvCSinudXc+wh1M55X1rgOSV6INczNQLGbRps5o+kDLHi41lF5fQymkMLe9ultMCSKl6chpn25OV6ejahpW/7QjzXMfIIJ2uvxP7pIELbaa8geUITMkwyED3A1OuKsx7viEaNQ7zLTrvaKBcJ/0eOcjZxyR3gYZte20NIRA54Fd8Zem0emRLQkFzydw+MFiFeiOYBw1oI7oSaMePnaMqT0DZOeFNj7yiaRg9TsUg1dd40Ey0/wRjaEDoRlEdSsTvwOncWbJx/vpR0oK37apO1CxVHW/exybFye3KYQ7lvB47XgZsLczB8Leyc1ktzCs2E1QC6WYds6iM4OPV0W0gsOMn5ZzQGBOuuSimL/iMh1PsKxw2yW02zY0V9NkBm4gEUh2QCP1CHkQrFvJaVmVCwnDStP4pJDtbj0DgeikGfXyrXuVe2BT4YmwSgnlh0V7pXTPxLcntV4G/yh6uNqfEHcR4DldqdJXjIHhqeA4SMmbQ44iPeWyIbgvv5WfKyDJuJM/sRiHfALlI+f+L2ldE7XFZcblEY4gNXSRHWkqhJRETbgvoxKbKgCVsnog=
