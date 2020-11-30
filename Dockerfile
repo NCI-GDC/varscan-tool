@@ -1,9 +1,12 @@
 FROM quay.io/ncigdc/varscan:2.3.9 as varscan
+FROM python:3.7-slim as python
+
 MAINTAINER Charles Czysz <czysz@uchicago.edu>
 
-FROM python:3.7-slim
+FROM openjdk:slim
 
-COPY --from=varscan /usr/local/bin/* /usr/local/bin/
+COPY --from=python / /
+COPY --from=varscan /usr/local/bin/varscan.jar /usr/local/bin/varscan.jar
 
 ENV BINARY=varscan_tool
 
