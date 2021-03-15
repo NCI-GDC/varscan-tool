@@ -83,7 +83,7 @@ class VarscanSomatic:
         cmd_return = self._utils.call_subprocess(command, stdout=PIPE, stderr=PIPE)
         if not cmd_return.retcode == 0:
             msg = "Varscan somatic command failed"
-            raise ValueError(msg, command)
+            raise ValueError(msg, command, cmd_return.stdout, cmd_return.stderr)
         return
 
 
