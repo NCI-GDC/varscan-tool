@@ -15,7 +15,7 @@ from collections import namedtuple
 from types import SimpleNamespace
 from typing import List, Optional
 
-from varscan_tool import utils
+from varscan_tool import __version__, utils
 from varscan_tool.varscan import Varscan2, VarscanReturn
 from varscan_tool.varscan_somatic import VarscanSomatic
 
@@ -57,17 +57,23 @@ def tpe_submit_commands(
     return varscan_results
 
 
+def get_file_size(filename: pathlib.Path) -> int:
+    """ Gets file size """
+    return filename.stat().st_size
+
+
 def setup_parser() -> argparse.ArgumentParser:
     """
     Loads the parser.
     """
     # Main parser
     parser = argparse.ArgumentParser()
+    parser.add_argument("--version", action="version", version=__version__)
     # Required flags
     parser.add_argument(
-        "--pileup",
+        "--mpileup",
         action="append",
-        dest="pileups",
+        dest="mpileup",
         required=True,
         help="The mpileup files for tumor/normal pair.",
     )
@@ -167,6 +173,9 @@ def setup_parser() -> argparse.ArgumentParser:
         default=0.07,
         help="P-value for high-confidence calling [0.07]",
     )
+    parser.add_argument(
+        "--varscan_jar", default="/usr/local/bin/varscan.jar", required=False,
+    )
     return parser
 
 
@@ -176,18 +185,23 @@ def run(args, _somatic=VarscanSomatic, _utils=utils):
     # Set class attrs
     _somatic.set_attributes(args)
 
-    varscan_outputs = tpe_submit_commands(args, args.mpileups, args.thread_count)
+    varscan_outputs = tpe_submit_commands(args, args.mpileup, args.thread_count)
 
     # Check outputs
     p = pathlib.Path(".")
     snps = p.glob("*snp.Somatic.hc.vcf")
     indels = p.glob("*indel.Somatic.hc.vcf")
 
+    # Sanity check
+    assert len(snps) == len(indels) == len(args.mpileup), "Missing output!"
+    if any(get_file_size(x) == 0 for x in snps + indels):
+        logger.error("Empty output detected!")
+
     # Merge
     merged_snps = "multi_varscan2_snp_merged.vcf"
     merged_indels = "multi_varscan2_indel_merged.vcf"
-    _utils.merge_outputs(snps, merged_snps)
-    _utils.merge_outputs(indels, merged_indels)
+    _utils.merge_outputs(snps, open(merged_snps, 'w'))
+    _utils.merge_outputs(indels, open(merged_indels, 'w'))
 
 
 def process_argv(argv: Optional[List] = None) -> namedtuple:
