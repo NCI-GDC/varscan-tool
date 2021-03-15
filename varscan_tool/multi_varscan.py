@@ -174,7 +174,7 @@ def setup_parser() -> argparse.ArgumentParser:
         help="P-value for high-confidence calling [0.07]",
     )
     parser.add_argument(
-        "--varscan_jar", default="/usr/local/bin/varscan.jar", required=False,
+        "--varscan-jar", default="/usr/local/bin/varscan.jar", required=False,
     )
     return parser
 
@@ -193,15 +193,19 @@ def run(args, _somatic=VarscanSomatic, _utils=utils):
     indels = p.glob("*indel.Somatic.hc.vcf")
 
     # Sanity check
-    assert len(snps) == len(indels) == len(args.mpileup), "Missing output!"
-    if any(get_file_size(x) == 0 for x in snps + indels):
+    assert (
+        len([x for x in snps]) == len([x for x in indels]) == len(args.mpileup)
+    ), "Missing output!"
+    if any(get_file_size(x) == 0 for x in [x for x in snps] + [x for x in indels]):
         logger.error("Empty output detected!")
 
     # Merge
     merged_snps = "multi_varscan2_snp_merged.vcf"
     merged_indels = "multi_varscan2_indel_merged.vcf"
-    _utils.merge_outputs(snps, open(merged_snps, 'w'))
-    _utils.merge_outputs(indels, open(merged_indels, 'w'))
+    with open(merged_snps, 'w') as fout:
+        _utils.merge_outputs(snps, fout)
+    with open(merged_indels, 'w') as fout:
+        _utils.merge_outputs(indels, fout)
 
 
 def process_argv(argv: Optional[List] = None) -> namedtuple:
