@@ -1,9 +1,8 @@
 FROM quay.io/ncigdc/varscan:2.3.9 as varscan
 FROM python:3.7-slim as python
+FROM quay.io/ncigdc/bio-openjdk:8u282-slim
 
 MAINTAINER Charles Czysz <czysz@uchicago.edu>
-
-FROM openjdk:slim
 
 COPY --from=python / /
 COPY --from=varscan /usr/local/bin/varscan.jar /usr/local/bin/varscan.jar

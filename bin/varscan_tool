@@ -5,5 +5,5 @@ set -eo pipefail
 case "$1" in
 	test) python -m pytest tests;;
 	*version) python -m varscan_tool --version;;
-	multi) python -m varscan_tool.multi_varscan "$@";;
+	*) python -m varscan_tool $@;;
 esac

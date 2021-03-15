@@ -53,8 +53,7 @@ class SomaticProcess:
 
         if not cmd_return.retcode == 0:
             msg = "varscan processSomatic command failed"
-            raise ValueError(msg)
-
+            raise ValueError(msg, command, cmd_return.stdout, cmd_return.stderr)
         return
 
 
