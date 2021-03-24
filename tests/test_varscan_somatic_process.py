@@ -29,6 +29,7 @@ class Test_SomaticProcess(ThisTestCase):
 
     def test_init_sets_attributes(self):
         args = {
+            'timeout': 3600,
             'varscan_jar': 'varscan',
             'min_tumor_freq': 0.1,
             'max_normal_freq': 0.3,
@@ -47,14 +48,15 @@ class Test_SomaticProcess(ThisTestCase):
             max_normal_freq=0.99,
             vps_p_value=0.05,
         )
+        timeout = 3600
         input_vcf = "input.vcf"
         expected_command = self.CLASS_OBJ.COMMAND.format(
-            input_vcf=input_vcf, **args_dict
+            input_vcf=input_vcf, timeout=timeout, **args_dict
         )
-        obj = self.CLASS_OBJ(**args_dict, _utils=self.mocks.UTILS)
+        obj = self.CLASS_OBJ(**args_dict, timeout=timeout, _utils=self.mocks.UTILS)
         found = obj.run(input_vcf)
         self.mocks.UTILS.call_subprocess.assert_called_once_with(
-            expected_command, stdout=MOD.PIPE, stderr=MOD.PIPE,
+            expected_command, timeout, stdout=MOD.PIPE, stderr=MOD.PIPE,
         )
         self.assertIsNone(found)
 
@@ -65,14 +67,17 @@ class Test_SomaticProcess(ThisTestCase):
             max_normal_freq=0.99,
             vps_p_value=0.05,
         )
+        timeout = 3600
         input_vcf = "input.vcf"
         expected_command = self.CLASS_OBJ.COMMAND.format(
-            input_vcf=input_vcf, **args_dict
+            input_vcf=input_vcf, timeout=timeout, **args_dict
         )
-        with self.CLASS_OBJ(**args_dict, _utils=self.mocks.UTILS) as obj:
+        with self.CLASS_OBJ(
+            **args_dict, timeout=timeout, _utils=self.mocks.UTILS
+        ) as obj:
             found = obj.run(input_vcf)
         self.mocks.UTILS.call_subprocess.assert_called_once_with(
-            expected_command, stdout=MOD.PIPE, stderr=MOD.PIPE,
+            expected_command, timeout, stdout=MOD.PIPE, stderr=MOD.PIPE,
         )
         self.assertIsNone(found)
 
@@ -85,8 +90,9 @@ class Test_SomaticProcess(ThisTestCase):
             max_normal_freq=0.99,
             vps_p_value=0.05,
         )
+        timeout = 3600
         input_vcf = "input.vcf"
-        obj = self.CLASS_OBJ(**args_dict, _utils=self.mocks.UTILS)
+        obj = self.CLASS_OBJ(**args_dict, timeout=timeout, _utils=self.mocks.UTILS)
         with self.assertRaisesRegex(ValueError, "command failed"):
             obj.run(input_vcf)
 
@@ -99,9 +105,12 @@ class Test_SomaticProcess(ThisTestCase):
             max_normal_freq=0.99,
             vps_p_value=0.05,
         )
+        timeout = 3600
         input_vcf = "input.vcf"
         with self.assertRaisesRegex(ValueError, "command failed"):
-            with self.CLASS_OBJ(**args_dict, _utils=self.mocks.UTILS) as obj:
+            with self.CLASS_OBJ(
+                **args_dict, timeout=timeout, _utils=self.mocks.UTILS
+            ) as obj:
                 obj.run(input_vcf)
 
 

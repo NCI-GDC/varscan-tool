@@ -4,14 +4,15 @@ Multithreading VarScan2.3.9
 
 @author: Shenglai Li
 """
-
 import argparse
 import concurrent.futures
 import logging
 import os
 import pathlib
 import sys
+import time
 from collections import namedtuple
+from logging.config import dictConfig
 from types import SimpleNamespace
 from typing import List, Optional
 
@@ -29,12 +30,17 @@ def setup_logger():
     """
     Sets up the logger.
     """
-    logger_format = "[%(levelname)s] [%(asctime)s] [%(name)s] - %(message)s"
-    logger.setLevel(level=logging.INFO)
-    handler = logging.StreamHandler(sys.stderr)
-    formatter = logging.Formatter(logger_format, datefmt="%Y%m%d %H:%M:%S")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    config = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'},
+        },
+        'handlers': {'default': {'level': 'INFO', 'class': 'logging.StreamHandler',},},
+        'loggers': {'': {'handlers': ['default'], 'level': 'INFO', 'propagate': True}},
+    }
+    dictConfig(config)
+    return logger
 
 
 def tpe_submit_commands(
@@ -176,6 +182,13 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--varscan-jar", default="/usr/local/bin/varscan.jar", required=False,
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        required=False,
+        help="Max time for command to run, in seconds.",
+    )
     return parser
 
 
@@ -225,14 +238,16 @@ def process_argv(argv: Optional[List] = None) -> namedtuple:
 
 
 def main(argv=None) -> int:
-
+    """main"""
     exit_code = 0
     setup_logger()
 
     argv = argv or sys.argv
     args = process_argv(argv)
+    start = time.time()
     try:
         run(args)
+        logger.info("Finished, took %s seconds.", round(time.time() - start, 2))
     except Exception as e:
         logger.exception(e)
         exit_code = 1

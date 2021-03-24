@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import logging
 import os
 from subprocess import PIPE
 from textwrap import dedent
@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from varscan_tool import utils
 
 DI = SimpleNamespace(os=os)
+logger = logging.getLogger(__name__)
 
 
 class VarscanSomatic:
@@ -48,6 +49,7 @@ class VarscanSomatic:
         "strand_filter",
         "validation",
         "output_vcf",
+        "timeout",
     )
 
     def __init__(self, _utils=utils):
@@ -80,10 +82,17 @@ class VarscanSomatic:
             output_vcf=self.output_vcf,
             validation='--validation' if self.validation else '',
         )
-        cmd_return = self._utils.call_subprocess(command, stdout=PIPE, stderr=PIPE)
+        cmd_return = self._utils.call_subprocess(
+            command, self.timeout, stdout=PIPE, stderr=PIPE
+        )
+        logger.info(command)
+        logger.debug(cmd_return.stdout)
+        logger.debug(cmd_return.stderr)
         if not cmd_return.retcode == 0:
             msg = "Varscan somatic command failed"
-            raise ValueError(msg, command, cmd_return.stdout, cmd_return.stderr)
+            logger.debug(cmd_return.stdout)
+            logger.debug(cmd_return.stderr)
+            raise ValueError(msg)
         return
 
 
