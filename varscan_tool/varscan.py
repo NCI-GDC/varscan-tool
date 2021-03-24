@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import logging
 import os
 from types import SimpleNamespace
 from typing import NamedTuple
@@ -9,6 +9,7 @@ from varscan_tool.varscan_somatic import VarscanSomatic
 from varscan_tool.varscan_somatic_process import SomaticProcess
 
 DI = SimpleNamespace(os=os)
+logger = logging.getLogger(__name__)
 
 
 class VarscanReturn(NamedTuple):
@@ -37,6 +38,7 @@ class Varscan2:
         indel_file = "{}.indel.vcf".format(output_base)
 
         with _process(
+            args.timeout,
             args.varscan_jar,
             args.min_tumor_freq,
             args.max_normal_freq,

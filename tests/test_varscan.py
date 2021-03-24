@@ -35,6 +35,7 @@ class Test_Varscan2(ThisTestCase):
         self.mocks.PROCESS.return_value.__enter__.return_value = self.process_mock
 
         self.args = SimpleNamespace(
+            timeout=3600,
             varscan_jar='varscan_jar',
             min_tumor_freq=0.5,
             max_normal_freq=0.3,
