@@ -202,16 +202,13 @@ def run(args, _somatic=VarscanSomatic, _utils=utils):
 
     # Check outputs
     p = pathlib.Path(".")
-    snps = p.glob("*snp.Somatic.hc.vcf")
-    indels = p.glob("*indel.Somatic.hc.vcf")
+    snps = set(p.glob("*snp.Somatic.hc.vcf"))
+    indels = set(p.glob("*indel.Somatic.hc.vcf"))
 
     # Sanity check
-    assert (
-        len([x for x in snps]) == len([x for x in indels]) == len(args.mpileup)
-    ), "Missing output!"
-    if any(get_file_size(x) == 0 for x in [x for x in snps] + [x for x in indels]):
+    assert len(snps) == len(indels) == len(args.mpileup), "Missing output!"
+    if any(get_file_size(x) == 0 for x in list(snps) + list(indels)):
         logger.error("Empty output detected!")
-
     # Merge
     merged_snps = "multi_varscan2_snp_merged.vcf"
     merged_indels = "multi_varscan2_indel_merged.vcf"
