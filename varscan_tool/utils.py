@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import pathlib
 import shlex
 import subprocess
 from types import SimpleNamespace
@@ -50,11 +51,11 @@ def call_subprocess(
     return PopenReturn(retcode=p.returncode, stdout=stdout, stderr=stderr)
 
 
-def merge_outputs(files: List[str], output_file: IO):
+def merge_outputs(files: List[pathlib.PosixPath], output_file: IO):
     """Merge scattered outputs"""
     first = True
     for f in files:
-        with open(f) as fh:
+        with f.open() as fh:
             for line in fh:
                 if first or not line.startswith("#"):
                     output_file.write(line)
