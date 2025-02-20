@@ -4,6 +4,7 @@ Multithreading VarScan2.3.9
 
 @author: Shenglai Li
 """
+
 import argparse
 import concurrent.futures
 import logging
@@ -31,13 +32,18 @@ def setup_logger():
     Sets up the logger.
     """
     config = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'standard': {'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'},
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "standard": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
         },
-        'handlers': {'default': {'level': 'INFO', 'class': 'logging.StreamHandler',},},
-        'loggers': {'': {'handlers': ['default'], 'level': 'INFO', 'propagate': True}},
+        "handlers": {
+            "default": {
+                "level": "INFO",
+                "class": "logging.StreamHandler",
+            },
+        },
+        "loggers": {"": {"handlers": ["default"], "level": "INFO", "propagate": True}},
     }
     dictConfig(config)
     return logger
@@ -64,7 +70,7 @@ def tpe_submit_commands(
 
 
 def get_file_size(filename: pathlib.Path) -> int:
-    """ Gets file size """
+    """Gets file size"""
     return filename.stat().st_size
 
 
@@ -180,7 +186,9 @@ def setup_parser() -> argparse.ArgumentParser:
         help="P-value for high-confidence calling [0.07]",
     )
     parser.add_argument(
-        "--varscan-jar", default="/usr/local/bin/varscan.jar", required=False,
+        "--varscan-jar",
+        default="/usr/local/bin/varscan.jar",
+        required=False,
     )
     parser.add_argument(
         "--timeout",
@@ -212,14 +220,13 @@ def run(args, _somatic=VarscanSomatic, _utils=utils):
     # Merge
     merged_snps = "multi_varscan2_snp_merged.vcf"
     merged_indels = "multi_varscan2_indel_merged.vcf"
-    with open(merged_snps, 'w') as fout:
+    with open(merged_snps, "w") as fout:
         _utils.merge_outputs(snps, fout)
-    with open(merged_indels, 'w') as fout:
+    with open(merged_indels, "w") as fout:
         _utils.merge_outputs(indels, fout)
 
 
 def process_argv(argv: Optional[List] = None) -> namedtuple:
-
     parser = setup_parser()
 
     if argv:
@@ -228,7 +235,7 @@ def process_argv(argv: Optional[List] = None) -> namedtuple:
         args, unknown_args = parser.parse_known_args()
 
     args_dict = vars(args)
-    args_dict['extras'] = unknown_args
+    args_dict["extras"] = unknown_args
 
     run_args = namedtuple("RunArgs", list(args_dict.keys()))
     return run_args(**args_dict)

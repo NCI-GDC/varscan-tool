@@ -1,0 +1,11 @@
+---
+include:
+  - project: nci-gdc/gitlab-templates
+    ref: master
+    file:
+      - templates/global/full.yaml
+      - templates/python/full.yaml
+
+variables:
+  BUILD_PY_VERSION: python3.9
+  RELEASE_PY_VERSION: python3.9

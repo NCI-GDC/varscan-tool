@@ -1,5 +1,5 @@
 FROM quay.io/ncigdc/varscan:2.3.9 as varscan
-FROM python:3.7-slim as python
+FROM python:3.9-slim as python
 FROM quay.io/ncigdc/bio-openjdk:8u282-slim
 
 MAINTAINER Charles Czysz <czysz@uchicago.edu>

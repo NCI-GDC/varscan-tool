@@ -13,13 +13,13 @@ PACKAGE = "varscan_tool"
 INSTALL_REQUIRES = []
 
 DEV_REQUIRES = [
-    'detect-secrets==0.13.1',
-    'flake8',
-    'isort',
-    'mock',
-    'pre-commit',
-    'pytest',
-    'pytest-cov',
+    "detect-secrets==0.13.1",
+    "flake8",
+    "isort",
+    "mock",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
 ]
 
 
@@ -54,8 +54,8 @@ VERSION_FILE_STR = dedent(
 
 
 def write_version_file(**kwargs):
-    file_path = os.path.join(PACKAGE, '_version.py')
-    with open(file_path, 'w') as fh:
+    file_path = os.path.join(PACKAGE, "_version.py")
+    with open(file_path, "w") as fh:
         fh.write(VERSION_FILE_STR.format(**kwargs))
 
 
@@ -67,9 +67,9 @@ try:
     __short_version__ = mod.__short_version__
 except Exception:
     # Set defaults otherwise
-    __pypi_version__ = '0.0.0'
-    __long_version__ = '0.0.0'
-    __short_version__ = '0.0.0'
+    __pypi_version__ = "0.0.0"
+    __long_version__ = "0.0.0"
+    __short_version__ = "0.0.0"
     write_version_file(
         __pypi_version__=__pypi_version__,
         __long_version__=__long_version__,
@@ -102,7 +102,7 @@ class PrintVersion(Command):
             try:
                 commit_hash = call_subprocess(GIT_COMMANDS.hash)
             except Exception:
-                print('')
+                print("")
             else:
                 print(commit_hash)
         else:
@@ -129,14 +129,14 @@ class CaptureVersion(Command):
     def finalize_options(self):
         assert self.semver is not None, "Provide semver"
 
-        if self.branch is None or self.branch == 'unknown':
+        if self.branch is None or self.branch == "unknown":
             try:
                 self.branch = call_subprocess(GIT_COMMANDS.branch)
             except Exception:
                 self.branch = None
 
     def run(self):
-        branch_name = self.branch or 'unknown'
+        branch_name = self.branch or "unknown"
 
         git_short_hash = call_subprocess(GIT_COMMANDS.shorthash)
         git_commit = call_subprocess(GIT_COMMANDS.commit)
@@ -165,18 +165,17 @@ def call_subprocess(cmd: list):
 
 
 def get_pypi_suffix(branch, commit) -> str:
-    """Return PEP 440-compatible suffix based on branch type.
-    """
-    if branch == 'master':
-        return ''
-    elif branch.startswith('hotfix'):
-        return '.post{}'.format(commit)
-    elif branch.startswith('feat'):
-        return '.dev{}'.format(commit)
-    elif branch.startswith('release'):
-        return '.rc{}'.format(commit)
+    """Return PEP 440-compatible suffix based on branch type."""
+    if branch == "master":
+        return ""
+    elif branch.startswith("hotfix"):
+        return ".post{}".format(commit)
+    elif branch.startswith("feat"):
+        return ".dev{}".format(commit)
+    elif branch.startswith("release"):
+        return ".rc{}".format(commit)
     else:
-        return 'a{}'.format(commit)
+        return "a{}".format(commit)
 
 
 class Requirements(Command):
@@ -215,7 +214,7 @@ setup(
         "capture_version": CaptureVersion,
         "print_version": PrintVersion,
     },
-    scripts=[os.path.join(os.path.dirname(__file__), 'bin', PACKAGE)],
+    scripts=[os.path.join(os.path.dirname(__file__), "bin", PACKAGE)],
 )
 
 # __END__

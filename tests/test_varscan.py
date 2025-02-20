@@ -16,7 +16,6 @@ class ThisTestCase(unittest.TestCase):
 
 
 class Test_Varscan2(ThisTestCase):
-
     CLASS_OBJ = MOD.Varscan2
 
     def setUp(self):
@@ -36,7 +35,7 @@ class Test_Varscan2(ThisTestCase):
 
         self.args = SimpleNamespace(
             timeout=3600,
-            varscan_jar='varscan_jar',
+            varscan_jar="varscan_jar",
             min_tumor_freq=0.5,
             max_normal_freq=0.3,
             vps_p_value=0.05,
@@ -46,9 +45,9 @@ class Test_Varscan2(ThisTestCase):
         super().tearDown()
 
     def test_varscan_somatic_called_as_expected(self):
-        mpileup = 'foobar'
+        mpileup = "foobar"
         idx = 3
-        mock_basename = 'base'
+        mock_basename = "base"
         self.mocks.os.path.basename.return_value = mock_basename
 
         self.CLASS_OBJ.run_pipeline(
@@ -62,13 +61,14 @@ class Test_Varscan2(ThisTestCase):
 
         self.mocks.SOMATIC.assert_called_once_with()
         self.somatic_mock.run.assert_called_once_with(
-            mpileup, mock_basename,
+            mpileup,
+            mock_basename,
         )
 
     def test_varscan_process_somatic_called_as_expected(self):
-        mpileup = 'foobar'
+        mpileup = "foobar"
         idx = 3
-        mock_basename = 'base'
+        mock_basename = "base"
         self.mocks.os.path.basename.return_value = mock_basename
 
         self.CLASS_OBJ.run_pipeline(
@@ -89,9 +89,9 @@ class Test_Varscan2(ThisTestCase):
         self.process_mock.run.assert_has_calls(expected_process_calls)
 
     def test_varscan_returns_as_expected(self):
-        mpileup = 'foobar'
+        mpileup = "foobar"
         idx = 3
-        mock_basename = 'base'
+        mock_basename = "base"
         self.mocks.os.path.basename.return_value = mock_basename
 
         expected = MOD.VarscanReturn(

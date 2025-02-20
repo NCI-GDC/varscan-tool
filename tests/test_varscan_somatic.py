@@ -62,7 +62,7 @@ class Test_VarscanSomatic(ThisTestCase):
         self.CLASS_OBJ.set_attributes(SimpleNamespace(**self.attrs))
 
         attrs = self.attrs.copy()
-        attrs['validation'] = ''
+        attrs["validation"] = ""
         timeout = None
         output_base = "out"
         mpileup = "mpileup"
@@ -73,12 +73,15 @@ class Test_VarscanSomatic(ThisTestCase):
         obj.run(mpileup, output_base)
 
         self.mocks.UTILS.call_subprocess.assert_called_once_with(
-            expected_cmd, timeout, stdout=MOD.PIPE, stderr=MOD.PIPE,
+            expected_cmd,
+            timeout,
+            stdout=MOD.PIPE,
+            stderr=MOD.PIPE,
         )
 
     def test_run_raises_ValueError_with_failed_command(self):
         self.CLASS_OBJ.set_attributes(SimpleNamespace(**self.attrs))
-        subprocess_return = MOD.utils.PopenReturn(retcode=1, stdout='', stderr='')
+        subprocess_return = MOD.utils.PopenReturn(retcode=1, stdout="", stderr="")
         self.mocks.UTILS.call_subprocess.return_value = subprocess_return
 
         output_base = "out"

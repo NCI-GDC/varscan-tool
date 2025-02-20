@@ -48,7 +48,10 @@ class Varscan2:
             process.run(indel_file)
 
         return VarscanReturn(
-            snp_file=snp_file, indel_file=indel_file, mpileup=mpileup, idx=idx,
+            snp_file=snp_file,
+            indel_file=indel_file,
+            mpileup=mpileup,
+            idx=idx,
         )
 
 
