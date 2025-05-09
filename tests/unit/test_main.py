@@ -3,6 +3,7 @@
 import unittest
 
 from click.testing import CliRunner
+
 from varscan_tool import __main__ as MOD
 
 
