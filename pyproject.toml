@@ -1,7 +1,131 @@
-[tool.black]
-line-length = 88
-skip-string-normalization = true
-target-version = ['py37']
+[build-system]
+requires = ["flit_scm"]
+build-backend = "flit_scm:buildapi"
 
-[flake8]
-max-line-length = 88
+[project]
+name = "varscan-tool"
+description = "VarScan is a platform-independent mutation caller for targeted, exome, and whole-genome resequencing data generated on Illumina, SOLiD, Life/PGM, Roche/454, and similar instruments."
+authors = [
+    {name = "Linghao Song", email = "linghao@uchicago.edu"}
+]
+
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3 :: Only"
+]
+dynamic = ["version"]
+dependencies = [
+    "click"
+]
+
+[project.optional-dependencies]
+build = [
+  "setuptools_scm",
+  "flit",
+  "twine",
+]
+
+dev = [
+    "black",
+    "detect-secrets==1.4.0",
+    "ruff",
+    "mypy",
+    "pre-commit>=2.9.0",
+    "tox",
+]
+
+test = [
+    "coverage[toml]",
+    "pytest",
+]
+
+type = [
+    "types-click",
+]
+
+[project.urls]
+homepage = "https://github.com/NCI-GDC/varscan-tool"
+
+[project.scripts]
+"varscan_tool" = "varscan_tool.__main__:main"
+
+[tool.setuptools_scm]
+write_to = "varscan_tool/_version.py"
+local_scheme = "dirty-tag"
+version_scheme = "python-simplified-semver"
+fallback_version = "0"
+
+[tool.coverage.run]
+source = ["varscan_tool"]
+branch = true
+parallel = true
+
+[tool.flit.module]
+name = "varscan_tool"
+
+[tool.flit.sdist]
+include = ["varscan_tool/_version.py"]
+exclude = [
+        ".*",
+        "dev-requirements.*",
+        "Dockerfile",
+        "Jenkinsfile",
+        "*travis.yml",
+        "tox.ini",
+]
+
+[tool.mypy]
+python_version = 3.8
+disallow_untyped_defs = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
+select = ["E", "F"]
+ignore = ["E501"]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F", "I"]
+unfixable = []
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Same as Black.
+line-length = 88
+
+# Allow unused variables when underscore-prefixed.
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+target-version = 'py39'
+
+[tool.ruff.lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402"]

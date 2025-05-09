@@ -10,7 +10,9 @@ from varscan_tool import varscan_somatic_process as MOD
 class ThisTestCase(unittest.TestCase):
     def setUp(self):
         super().setUp()
-        self.mocks = SimpleNamespace(UTILS=mock.MagicMock(spec_set=MOD.utils),)
+        self.mocks = SimpleNamespace(
+            UTILS=mock.MagicMock(spec_set=MOD.utils),
+        )
 
     def tearDown(self):
         super().tearDown()
@@ -21,7 +23,11 @@ class Test_SomaticProcess(ThisTestCase):
 
     def setUp(self):
         super().setUp()
-        self.mock_return = MOD.utils.PopenReturn(retcode=0, stdout='foo', stderr='bar',)
+        self.mock_return = MOD.utils.PopenReturn(
+            retcode=0,
+            stdout="foo",
+            stderr="bar",
+        )
         self.mocks.UTILS.call_subprocess.return_value = self.mock_return
 
     def tearDown(self):
@@ -29,11 +35,11 @@ class Test_SomaticProcess(ThisTestCase):
 
     def test_init_sets_attributes(self):
         args = {
-            'timeout': 3600,
-            'varscan_jar': 'varscan',
-            'min_tumor_freq': 0.1,
-            'max_normal_freq': 0.3,
-            'vps_p_value': 0.05,
+            "timeout": 3600,
+            "varscan_jar": "varscan",
+            "min_tumor_freq": 0.1,
+            "max_normal_freq": 0.3,
+            "vps_p_value": 0.05,
         }
         obj = self.CLASS_OBJ(**args, _utils=self.mocks.UTILS)
         self.assertEqual(self.mocks.UTILS, obj._utils)
@@ -56,7 +62,10 @@ class Test_SomaticProcess(ThisTestCase):
         obj = self.CLASS_OBJ(**args_dict, timeout=timeout, _utils=self.mocks.UTILS)
         found = obj.run(input_vcf)
         self.mocks.UTILS.call_subprocess.assert_called_once_with(
-            expected_command, timeout, stdout=MOD.PIPE, stderr=MOD.PIPE,
+            expected_command,
+            timeout,
+            stdout=MOD.PIPE,
+            stderr=MOD.PIPE,
         )
         self.assertIsNone(found)
 
@@ -77,7 +86,10 @@ class Test_SomaticProcess(ThisTestCase):
         ) as obj:
             found = obj.run(input_vcf)
         self.mocks.UTILS.call_subprocess.assert_called_once_with(
-            expected_command, timeout, stdout=MOD.PIPE, stderr=MOD.PIPE,
+            expected_command,
+            timeout,
+            stdout=MOD.PIPE,
+            stderr=MOD.PIPE,
         )
         self.assertIsNone(found)
 

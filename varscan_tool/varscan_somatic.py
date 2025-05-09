@@ -61,7 +61,9 @@ class VarscanSomatic:
             setattr(cls, attr, getattr(args, attr, None))
 
     def run(
-        self, mpileup: str, output_base: str,
+        self,
+        mpileup: str,
+        output_base: str,
     ):
         """run varscan2 workflow"""
         command = self.COMMAND.format(
@@ -80,7 +82,7 @@ class VarscanSomatic:
             somatic_p_value=self.somatic_p_value,
             strand_filter=self.strand_filter,
             output_vcf=self.output_vcf,
-            validation='--validation' if self.validation else '',
+            validation="--validation" if self.validation else "",
         )
         cmd_return = self._utils.call_subprocess(
             command, self.timeout, stdout=PIPE, stderr=PIPE

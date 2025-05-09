@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class SomaticProcess:
-
     COMMAND = dedent(
         """
         java -d64 -XX:+UseSerialGC -Xmx3G

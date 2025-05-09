@@ -1,6 +1,6 @@
 try:
-    from varscan_tool._version import __long_version__
-
-    __version__ = __long_version__
+    from varscan_tool._version import version
 except ImportError:
-    __version__ = "0.0.0"
+    version = "0"
+
+__version__ = version

@@ -108,10 +108,3 @@ ENV/
 # VSCode
 .vscode/
 test-reports/
-
-# Gitlab CI - automatically created, break flit validation
-vars.env
-gl-code-quality-report.html
-
-# Added in base-container builder image
-aws-lc

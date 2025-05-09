@@ -1,0 +1,20 @@
+{
+    "template": "git@github.com:NCI-GDC/bio-python-template.git",
+    "commit": "baf2226bed9c364393971df5fb8ed3bdafa1c744",
+    "context": {
+      "cookiecutter": {
+        "full_name": "Linghao Song",
+        "email": "linghao@uchicago.edu",
+        "github_username": "sxwcasd",
+        "project_name": "varscan-tool",
+        "package_name": "varscan_tool",
+        "project_short_description": "VarScan is a platform-independent mutation caller for targeted, exome, and whole-genome resequencing data generated on Illumina, SOLiD, Life/PGM, Roche/454, and similar instruments.",
+        "min_python_version": "3.9",
+        "github_repo": "https://github.com/NCI-GDC/varscan-tool",
+        "commit": "baf2226bed9c364393971df5fb8ed3bdafa1c744",
+        "_template": "git@github.com:NCI-GDC/bio-python-template.git"
+      }
+    },
+    "directory": null,
+    "checkout": null
+  }
